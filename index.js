@@ -1,15 +1,30 @@
 const express = require('express');
 const request = require('request');
 const path = require('path');
-const Movie = require('./model.js');
-const Comment = require('./comment_modal.js');
 const { render } = require('ejs');
-const { isValidObjectId } = require('mongoose');
+const firebase = require("firebase");
+require("firebase/firestore");
+// Required for side-effects
+require("firebase/firestore");
 
-require('./mongoose.js');
 
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+    apiKey: "AIzaSyAlIsvvftgIhc_iuEyrXPV5EhmzBg0cfSw",
+    authDomain: "movie-app-58bc6.firebaseapp.com",
+    databaseURL: "https://movie-app-58bc6.firebaseio.com",
+    projectId: "movie-app-58bc6",
+    storageBucket: "movie-app-58bc6.appspot.com",
+    messagingSenderId: "307353684802",
+    appId: "1:307353684802:web:809b28ad4bc7fc704b96db",
+    measurementId: "G-P4DWVMQHED"
+  };
+  
+firebase.initializeApp(firebaseConfig);
 var bodyParser = require('body-parser');
 var app = express();
+var db = firebase.firestore();
+
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }))
@@ -89,6 +104,7 @@ var recommend = [
 
 app.get('/', (req, res) => {
     res.render('index',{trend: trend, recommend: recommend});
+   
 });
 
 app.get('/search', (req, res) => {
@@ -108,56 +124,59 @@ app.get('/search', (req, res) => {
 });
 
 app.get('/search/:id',(req,res)=>{
-    Movie.findById(req.params.id).populate("comments").exec(function(err,mov){
-        if(err) console.log(err);
-        else{
+
+   db.collection("comment").where("movieid","==",req.params.id).get().then(function (querySnapshot) {
+        var comment = querySnapshot.docs.map((doc) =>
+          Object.assign(doc.data())
+        );
+        
+        
+       
             var query = req.params.id;
             var url = `http://www.omdbapi.com/?i=${query}&apikey=3db01401`;
             request(url,function(error, response, body){
                 if(!error && response.statusCode === 200){
                     var movie = JSON.parse(body);
-                    res.render('result',{movie: movie, mov: mov});
+                    res.render('result',{movie: movie, mov: comment});
                 } else {
                     console.log(error);
                     console.log(response.statusCode);
                 }
             });
-        }
+        
     });
 });
+
+
+
+    
 
 app.post("/search/:id",(req,res)=>{
-    Movie.exists({_id: req.body.movie_id},function(err,result){
-       if(err) throw err;
-       if(result) {
-           Movie.findById(req.params.id).populate("comments").exec(function(err,movie){
-               if(err) throw err;
-               Comment.create({username: req.body.username,comment: req.body.comment},function(err,com){
-                   if(err) throw err;
-                   com.save();
-                   movie.comments.push(com);
-                   movie.save();
-                   //console.log(movie);
-               });
-               res.redirect('back');
-           });
-       } else {
-           Movie.create({_id: req.body.movie_id} ,function(err,movie){
-               if(err) throw err;
-               var temp = {username: req.body.username,comment: req.body.comment};
-               Comment.create(temp ,function(err,com){
-                   if(err) throw err;
-                   com.save();
-                   movie.comments.push(com);
-                   movie.save();
-                   //console.log(movie);
-               });
-               res.redirect('back');
-           });
-       }
+
+    console.log(req.body)
+    
+    db.collection("comment").add({
+        movieid : req.body.movie_id ,
+        username: req.body.username,
+        comment : req.body.comment
+    })
+    .then(function(docRef) {
+        console.log("Document written with ID: ", docRef.id);
+    })
+    .catch(function(error) {
+        console.error("Error adding document: ", error);
+    });
+
+    db.collection("users").get().then((querySnapshot) => {
+        querySnapshot.forEach((doc) => {
+            console.log(`${doc.id} => ${doc.data()}`);
+        });
+    });
+    res.redirect("/search/"+req.params.id)
+    
 
     });
-});
+
 
 app.listen(port, () => {
     console.log(`Server started at http://127.0.0.1:${port}`);

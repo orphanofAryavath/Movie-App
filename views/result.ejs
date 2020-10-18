@@ -54,8 +54,8 @@
         <div class="col-12 mb-2">
             <h4>Comment Section:</h4>
         </div>
-        <% if(mov != null){ %>
-            <% mov.comments.forEach(function(com){ %>
+        <% if(mov.length != 0){%>
+            <% mov.forEach(function(com){ %>
                 <div class="row">
                     <div class="col-md-12">
                         <p>
@@ -64,7 +64,8 @@
                     </div>
                 </div>
             <% }); %>
-        <% } %>
+            <%}%>
+
         <div class="col-12 mb-3">
             <!-- Comment Form -->
             <h6>Give a comment</h6>
@@ -85,27 +86,6 @@
     </div>
 </div>
 
-<!-- Ajax to handle comments -->
-<!--<script>-->
-<!--    $("#comment-form").submit(function(e) {-->
-<!--        e.preventDefault();-->
-<!--        $form = $(this)[0];-->
-<!--        // console.log($form);-->
-<!--        // console.log(data);-->
-<!--        $.ajax({-->
-<!--            type: "POST",-->
-<!--            url: "/"+$form.movie_id.value,-->
-<!--            data: {-->
-<!--                'movie_id': $form.movie_id.value,-->
-<!--                'username': $form.username.value,-->
-<!--                'comment': $form.comment.value,-->
-<!--            },-->
-<!--            success: function (response) {-->
-<!--                alert(response)-->
-<!--            }-->
-<!--        });-->
-<!--        // return false;-->
-<!--    })-->
-<!--</script>-->
+
 
 <%- include('footer') -%>
